@@ -42,15 +42,6 @@
 
 namespace swri_profiler_tools
 {
-static QColor colorFromString(const QString &name)
-{
-  size_t name_hash = std::hash<std::string>{}(name.toStdString());
-  
-  int h = (name_hash >> 0) % 255;
-  int s = (name_hash >> 8) % 200 + 55;
-  int v = (name_hash >> 16) % 200 + 55;
-  return QColor::fromHsv(h, s, v);
-}
 
 PartitionWidget::PartitionWidget(QWidget *parent)
   :
@@ -87,7 +78,7 @@ void PartitionWidget::setDatabase(ProfileDatabase *db)
 void PartitionWidget::updateData()
 {
   if (!active_key_.isValid()) {
-    return;
+	  return;
   }    
 
   const Profile &profile = db_->profile(active_key_.profileKey());
@@ -128,7 +119,7 @@ QRectF PartitionWidget::dataRect(const Layout &layout) const
   double right = layout.back().rect.right();
 
   for (auto const &item : layout) {
-    if (active_key_.nodeKey() == item.node_key && item.exclusive == false) {
+    if (active_key_.flatKey() == item.node_flat_key && item.exclusive == false) {
       QRectF rect = item.rect;
         
       rect.setLeft(std::max(0.0, rect.left()-0.2));
@@ -145,9 +136,9 @@ QRectF PartitionWidget::dataRect(const Layout &layout) const
   return QRectF(QPointF(0.0, 0.0), QPointF(right, 1.0));
 }
 
-void PartitionWidget::setActiveNode(int profile_key, int node_key)
+void PartitionWidget::setActiveNode(int profile_key, int node_flat_key)
 {
-  const DatabaseKey new_key(profile_key, node_key);
+  const DatabaseKey new_key(profile_key, node_flat_key);
 
   if (new_key == active_key_) {
     return;
@@ -157,9 +148,9 @@ void PartitionWidget::setActiveNode(int profile_key, int node_key)
   if (active_key_.isValid()) {
     first = false;
   }
-    
+
   active_key_ = new_key;
-  
+
   const Profile &profile = db_->profile(active_key_.profileKey());
   Layout layout = layoutProfile(profile);
   QRectF data_rect = dataRect(layout);
@@ -175,76 +166,65 @@ void PartitionWidget::setActiveNode(int profile_key, int node_key)
     view_animator_->setStartValue(data_rect);
     view_animator_->setEndValue(data_rect);
   }
-
-  emit activeNodeChanged(profile_key, node_key);
+  emit activeNodeChanged(profile_key, node_flat_key);
 }
 
 PartitionWidget::Layout PartitionWidget::layoutProfile(const Profile &profile)
 {
   Layout layout;
   
-  const ProfileNode &root_node = profile.rootNode();
-  if (!root_node.isValid()) {
+  const ProfileNode *root_node = profile.rootNode();
+  if (!root_node->isValid()) {
     qWarning("Profile returned invalid root node.");
     return layout;
   }
 
-  if (root_node.data().empty()) {
-    return layout;
-  }
-
-  double time_scale = root_node.data().back().cumulative_inclusive_duration_ns;
+  double time_scale = root_node->cumulative_inclusive_duration_ns;
 
   int column = 0;
   LayoutItem root_item;
-  root_item.node_key = root_node.nodeKey();
+  root_item.node_flat_key = root_node->flatKey();
   root_item.exclusive = false;
   root_item.rect = QRectF(column, 0.0, 1, 1.0);
   layout.push_back(root_item);
-
-  bool keep_going = root_node.hasChildren();
-
+  bool keep_going = root_node->hasChildren();
   std::vector<LayoutItem> parents;
   std::vector<LayoutItem> children;
   parents.push_back(root_item);
-  
   while (keep_going) {
     // We going to stop unless we see some children.
     keep_going = false;
     column++;
-    
     double span_start = 0.0;
-    for (auto const &parent_item : parents) {      
-      const ProfileNode &parent_node = profile.node(parent_item.node_key);      
-      
+    for (auto const &parent_item : parents) {
+      const ProfileNode *parent_node = profile.flatIndex(parent_item.node_flat_key);
       // Add the carry-over exclusive item.
       {
-        double height =  parent_node.data().back().cumulative_exclusive_duration_ns/time_scale;
+        double height =  parent_node->cumulative_exclusive_duration_ns/time_scale;
         LayoutItem item;
-        item.node_key = parent_item.node_key;
+        item.node_flat_key = parent_item.node_flat_key;
         item.exclusive = true;
         item.rect = QRectF(column, span_start, 1, height);
         children.push_back(item);
         span_start = item.rect.bottom();
       }
-
       // Don't add children for an exclusive item because they've already been added.
       if (parent_item.exclusive) {
         continue;
       }
-      
-      for (int child_key : parent_node.childKeys()) {
-        const ProfileNode &child_node = profile.node(child_key);
-        double height = child_node.data().back().cumulative_inclusive_duration_ns / time_scale;
-        
+
+      for (auto child_kvp : parent_node->childKeys()) {
+        const ProfileNode *child_node = child_kvp.second;
+        double height = child_node->cumulative_inclusive_duration_ns / time_scale;
+
         LayoutItem item;
-        item.node_key = child_key;
+        item.node_flat_key = child_node->flatKey();
         item.exclusive = false;
         item.rect = QRectF(column, span_start, 1, height);
         children.push_back(item);
         span_start = item.rect.bottom();
 
-        keep_going |= child_node.hasChildren();
+        keep_going |= child_node->hasChildren();
       }
     }
 
@@ -270,9 +250,10 @@ void PartitionWidget::renderLayout(QPainter &painter,
     if (item.exclusive) {
       continue;
     }
-      
-    const ProfileNode &node = profile.node(item.node_key);
-    QColor color = colorFromString(node.name());
+
+
+    const ProfileNode *node = profile.flatIndex(item.node_flat_key);
+    QColor color = colorFromString(node->name());
 
     QRectF data_rect = item.rect;
     data_rect.setRight(right);
@@ -333,10 +314,13 @@ void PartitionWidget::toolTipEvent(QHelpEvent *event)
   const LayoutItem &item = current_layout_[index];
 
   QString tool_tip;
-  if (item.node_key == profile.rootKey()) {
+
+  if (item.node_flat_key == profile.rootNode()->flatKey()) {
     tool_tip = profile.name();
   } else {  
-    tool_tip = profile.node(item.node_key).path();
+
+	  tool_tip = profile.flatIndex(item.node_flat_key)->path(); // todo fix this
+
     if (item.exclusive) {
       tool_tip += " [exclusive]";
     }
@@ -344,7 +328,7 @@ void PartitionWidget::toolTipEvent(QHelpEvent *event)
   
   QRectF win_rect = win_from_data_.mapRect(item.rect);
   QRect int_rect = roundRectF(win_rect);  
-  QToolTip::showText(event->globalPos(), tool_tip, this, int_rect);  
+  QToolTip::showText(event->globalPos(), tool_tip, this, int_rect);
 }
 
 void PartitionWidget::mousePressEvent(QMouseEvent *event)
@@ -361,6 +345,6 @@ void PartitionWidget::mouseDoubleClickEvent(QMouseEvent *event)
   }
 
   const LayoutItem &item = current_layout_[index];
-  setActiveNode(active_key_.profileKey(), item.node_key);
+  setActiveNode(active_key_.profileKey(), item.node_flat_key);
 }    
 }  // namespace swri_profiler_tools

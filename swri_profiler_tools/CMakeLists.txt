@@ -52,6 +52,7 @@ set(MOC_HEADER_FILES
   include/swri_profiler_tools/partition_widget.h
   include/swri_profiler_tools/variant_animation.h
   include/swri_profiler_tools/time_plot_widget.h
+  include/swri_profiler_tools/qcustomplot.h
   )
 
 set(SRC_FILES
@@ -67,6 +68,7 @@ set(SRC_FILES
   src/util.cpp
   src/partition_widget.cpp
   src/time_plot_widget.cpp
+  src/qcustomplot.cpp
   )
 qt4_add_resources(RCC_SRCS resources/images.qrc)
 

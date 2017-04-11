@@ -33,8 +33,9 @@
 
 #include <QObject>
 #include <ros/subscriber.h>
-#include <swri_profiler_msgs/ProfileIndexArray.h>
-#include <swri_profiler_msgs/ProfileDataArray.h>
+#include <ros/master.h>
+#include <swri_profiler_msgs/ProfileIndex.h>
+#include <swri_profiler_msgs/ProfileData.h>
 
 namespace swri_profiler_tools
 {
@@ -49,8 +50,8 @@ class RosSourceBackend : public QObject
   
  Q_SIGNALS:
   void connected(bool connected, QString uri);
-  void indexReceived(swri_profiler_msgs::ProfileIndexArray);
-  void dataReceived(swri_profiler_msgs::ProfileDataArray);
+  void indexReceived(swri_profiler_msgs::ProfileIndex);
+  void dataReceived(swri_profiler_msgs::ProfileData);
 
  public:
   RosSourceBackend();
@@ -62,8 +63,8 @@ class RosSourceBackend : public QObject
   
   void timerEvent(QTimerEvent *event);
 
-  void handleIndex(const swri_profiler_msgs::ProfileIndexArray &msg);
-  void handleData(const swri_profiler_msgs::ProfileDataArray &msg);
+  void handleIndex(const swri_profiler_msgs::ProfileIndex &msg);
+  void handleData(const swri_profiler_msgs::ProfileData &msg);
 };  // class RosSourceBackend
 }  // namespace swri_profiler_tools
 #endif  // SWRI_PROFILER_TOOLS_ROS_SOURCE_BACKEND_H_

@@ -49,6 +49,7 @@ class ProfileDatabase : public QObject
   // map because the map relies on operations that Qt doesn't permit
   // on QObject descendents.
   std::unordered_map<int, Profile*> profiles_;
+
   // This provides stable ordering for the profiles.
   std::vector<int> profiles_list_;
   

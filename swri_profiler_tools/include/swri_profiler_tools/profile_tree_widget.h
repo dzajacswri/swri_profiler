@@ -34,6 +34,8 @@
 
 #include <QWidget>
 #include <swri_profiler_tools/database_key.h>
+#include <swri_profiler_tools/profile.h>
+//#include <swri_profiler_tools/NodeKey.h>
 
 QT_BEGIN_NAMESPACE
 class QPoint;
@@ -63,10 +65,10 @@ class ProfileTreeWidget : public QWidget
   void setDatabase(ProfileDatabase *db);
 
  Q_SIGNALS:
-  void activeNodeChanged(int profile_key, int node_key);
+  void activeNodeChanged(int profile_key, int node_flat_key);
 
  public Q_SLOTS:
-  void setActiveNode(int profile_key, int node_key);
+  void setActiveNode(int profile_key,  int node_flat_key);
                                        
  private Q_SLOTS:
   void handleProfileAdded(int profile_key);
@@ -78,9 +80,12 @@ class ProfileTreeWidget : public QWidget
  private:
   void synchronizeWidget();
   void addProfile(int profile_key);
-  void addNode(QTreeWidgetItem *parent, const Profile &profile, const int node_key);
+  void addNode(QTreeWidgetItem *parent,
+  								const ProfileNode *node_key,
+  					            const Profile &profile);
 
   QString nameForKey(const DatabaseKey &key) const;
+  QString nameForKey(ProfileNode *node) const;
   void markItemActive(const DatabaseKey &key);
   void markItemInactive(const DatabaseKey &key);
 };  // class ProfileTreeWidget

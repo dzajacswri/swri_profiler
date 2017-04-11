@@ -36,21 +36,23 @@
 
 namespace swri_profiler_tools
 {
-// This structure represents a single chunk of profile information and
-// is used to pass new data to the profile database.  I don't like the
-// name but I more don't like not making progress from sitting around
-// thinking of a better name.
-struct NewProfileData
-{
-  QString label;
-  uint64_t wall_stamp_sec;
-  uint64_t ros_stamp_ns;
-  uint64_t cumulative_call_count;
-  uint64_t cumulative_inclusive_duration_ns;
-  uint64_t incremental_inclusive_duration_ns;
-  uint64_t incremental_max_duration_ns;
-};  // struct NewProfileData
+	// This structure represents a single chunk of profile information and
+	// is used to pass new data to the profile database.  I don't like the
+	// name but I more don't like not making progress from sitting around
+	// thinking of a better name.
+	struct NewProfileData
+	{
+		QString ros_node;
+		QString name;
+		uint64_t wall_stamp_sec;
+		uint64_t ros_stamp_ns;
+		int blockID;
+		uint32_t thread_id;
+		bool open;
+	};  // struct NewProfileData
 
-typedef std::vector<NewProfileData> NewProfileDataVector;
+	typedef std::vector<NewProfileData> NewProfileDataVector;
+
 }  // namespace swri_profiler_tools
+
 #endif  // SWRI_PROFILER_TOOLS_NEW_PROFILE_DATA_H_

@@ -89,12 +89,12 @@ void RosSourceBackend::timerEvent(QTimerEvent *event)
   }    
 }
 
-void RosSourceBackend::handleIndex(const swri_profiler_msgs::ProfileIndexArray &msg)
+void RosSourceBackend::handleIndex(const swri_profiler_msgs::ProfileIndex &msg)
 {
   Q_EMIT indexReceived(msg);
 }
 
-void RosSourceBackend::handleData(const swri_profiler_msgs::ProfileDataArray &msg)
+void RosSourceBackend::handleData(const swri_profiler_msgs::ProfileData &msg)
 {
   Q_EMIT dataReceived(msg);
 }

@@ -41,6 +41,19 @@ QT_END_NAMESPACE
 
 namespace swri_profiler_tools
 {
+
+static QColor colorFromString(const QString &name)
+{
+  size_t name_hash = std::hash<std::string>{}(name.toStdString());
+
+  int h = (name_hash >> 0) % 255;
+  int s = (name_hash >> 8) % 200 + 55;
+  int v = (name_hash >> 16) % 200 + 55;
+  return QColor::fromHsv(h, s, v);
+}
+
+
+
 class Profile;
 class ProfileDatabase;
 class VariantAnimation;
@@ -54,10 +67,10 @@ class PartitionWidget : public QWidget
   void setDatabase(ProfileDatabase *db);
 
  public Q_SLOTS:
-  void setActiveNode(int profile_key, int node_key);
+  void setActiveNode(int profile_key, int node_flat_key);
 
  Q_SIGNALS:
-  void activeNodeChanged(int profile_key, int node_key);
+  void activeNodeChanged(int profile_key, int node_flat_key);
 
   
  private:
@@ -65,10 +78,11 @@ class PartitionWidget : public QWidget
   // laid out.
   struct LayoutItem
   {
-    int node_key;
+    int node_flat_key;
     bool exclusive;
     QRectF rect;
   };
+
   typedef std::vector<LayoutItem> Layout;
   
   ProfileDatabase *db_;

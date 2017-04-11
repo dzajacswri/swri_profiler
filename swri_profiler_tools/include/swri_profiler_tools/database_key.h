@@ -31,29 +31,31 @@
 #ifndef SWRI_PROFILER_TOOLS_DATABASE_KEY_H_
 #define SWRI_PROFILER_TOOLS_DATABASE_KEY_H_
 
+#include <swri_profiler_tools/profile.h>
+
 namespace swri_profiler_tools
 {
 struct DatabaseKey
 {
  private:
   int profile_key_;
-  int node_key_;
+  int flat_key_;
 
  public:
-  DatabaseKey() : profile_key_(-1), node_key_(-1) {}
-  DatabaseKey(int profile_key, int node_key)
-    : profile_key_(profile_key), node_key_(node_key) {}
+  DatabaseKey() : profile_key_(-1), flat_key_(-1) {}
+  DatabaseKey(int profile_key, int flat_key)
+    : profile_key_(profile_key), flat_key_(flat_key)
+  {  }
 
-  bool isValid() const { return profile_key_ >= 0 && node_key_ >= 0; }
+  bool isValid() const { return profile_key_ >= 0 && flat_key_ >= 0;  }
 
   int profileKey() const { return profile_key_; }
-  int nodeKey() const { return node_key_; }
-  
+
+  const int flatKey() const { return flat_key_; }
 
   bool operator==(const DatabaseKey &other) const
   {
-    return (profile_key_ == other.profile_key_ &&
-            node_key_ == other.node_key_);
+    return (profile_key_ == other.profile_key_) && (flat_key_ == other.flat_key_);
   }
 
   bool operator!=(const DatabaseKey &other) const
@@ -64,7 +66,7 @@ struct DatabaseKey
   bool operator<(const DatabaseKey &other) const
   {
     if (profile_key_ == other.profile_key_) {
-      return node_key_ < other.node_key_;
+      return flat_key_ < other.flat_key_; //todo fix this
     } else {
       return profile_key_ < other.profile_key_;
     }
@@ -79,9 +81,10 @@ template <>
 struct hash<swri_profiler_tools::DatabaseKey> {
   size_t operator () (const swri_profiler_tools::DatabaseKey &key) const
   {
-    // This should be a fine hash function because it's very unlikely
-    // someone would be working with hundreds of profiles at once.
-    return key.profileKey()*1000 + key.nodeKey();
+	  size_t hash = 17;
+	  hash = hash * 31 + std::hash<int>()(key.profileKey());
+	  hash = hash * 31 + std::hash<int>()(key.flatKey());
+	  return hash;
   }
 };
 }  // namespace std

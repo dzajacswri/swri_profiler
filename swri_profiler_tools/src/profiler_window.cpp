@@ -53,6 +53,8 @@ ProfilerWindow::ProfilerWindow(ProfileDatabase *db)
                    ui.partitionWidget, SLOT(setActiveNode(int,int)));
   QObject::connect(ui.partitionWidget, SIGNAL(activeNodeChanged(int,int)),
                    ui.profileTree, SLOT(setActiveNode(int,int)));
+  QObject::connect(ui.profileTree, SIGNAL(activeNodeChanged(int,int)),
+                   ui.timePlot, SLOT(setActiveNode(int,int)));
 }
 
 ProfilerWindow::~ProfilerWindow()
